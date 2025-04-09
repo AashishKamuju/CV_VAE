@@ -1,56 +1,49 @@
-import variational_autoencoder
-import classifier
+
+import streamlit as st
 import torch
 from torchvision import transforms
 from PIL import Image
+from variational_autoencoder import VariationalAutoEncoder  # make sure class name matches
+from classifier import Classifier
 
+# Device setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Device : ",device)
+st.write(f"🔌 Device in use: `{device}`")
 
+# Class labels
 class_name = [
-    'Tomato__Target_Spot',                            # 0
-    'Tomato_Early_blight',                            # 1
-    'Tomato_Leaf_Mold',                               # 2
-    'Tomato_Bacterial_spot',                          # 3
-    'Potato___Early_blight',                          # 4
-    'Tomato_Spider_mites_Two_spotted_spider_mite',    # 5
-    'Tomato_Septoria_leaf_spot',                      # 6
-    'Tomato_healthy',                                 # 7
-    'Potato___healthy',                               # 8
-    'Tomato__Tomato_mosaic_virus',                    # 9
-    'Tomato__Tomato_YellowLeaf__Curl_Virus',          # 10
-    'Pepper__bell___healthy',                         # 11
-    'Potato___Late_blight',                           # 12
-    'Pepper__bell___Bacterial_spot',                  # 13
-    'Tomato_Late_blight'                              # 14
+    'Tomato__Target_Spot', 'Tomato_Early_blight', 'Tomato_Leaf_Mold',
+    'Tomato_Bacterial_spot', 'Potato___Early_blight',
+    'Tomato_Spider_mites_Two_spotted_spider_mite', 'Tomato_Septoria_leaf_spot',
+    'Tomato_healthy', 'Potato___healthy', 'Tomato__Tomato_mosaic_virus',
+    'Tomato__Tomato_YellowLeaf__Curl_Virus', 'Pepper__bell___healthy',
+    'Potato___Late_blight', 'Pepper__bell___Bacterial_spot', 'Tomato_Late_blight'
 ]
 
-image_path = "/content/tomato_bacteria_spot.jpg"
-img = Image.open(image_path).convert("RGB")
-
-# Load weights
+# Load models
 variational_autoencoder.load_state_dict(torch.load('cv_streamlit/vae_weights.pth'))
 classifier.load_state_dict(torch.load('cv_streamlit/classifier_vae_weights.pth'))
 
-# Set both to eval mode
-variational_autoencoder.eval()
-classifier.eval()
+# Streamlit UI
+st.title("🌿 Plant Disease Classifier (VAE-based)")
+uploaded_file = st.file_uploader("📷 Upload an image", type=["jpg", "jpeg", "png"])
 
-# Preprocess the image
-transform = transforms.Compose([
-    transforms.Resize((64, 64)),
-    transforms.ToTensor(),
-])
-input_image = transform(img).unsqueeze(0).to(device)  # shape: [1, 3, 64, 64]
+if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-# Get the 30-dimensional encoded vector
-with torch.no_grad():
-    encoded_feature, _, _, _ = variational_autoencoder(input_image)
+    # Preprocess image
+    transform = transforms.Compose([
+        transforms.Resize((64, 64)),
+        transforms.ToTensor(),
+    ])
+    input_tensor = transform(image).unsqueeze(0).to(device)
 
-# Classify using the classifier
-with torch.no_grad():
-    output = classifier(encoded_feature)
-    predicted_class = torch.argmax(output, dim=1).item()
+    # Encode and classify
+    with torch.no_grad():
+        encoded, _, _, _ = vae(input_tensor)
+        output = clf(encoded)
+        pred_class = torch.argmax(output, dim=1).item()
 
-print("Predicted Class Index:", predicted_class)
-print("Predicted Class Label:", class_name[predicted_class])
+    st.success(f"🧠 Predicted class: **{class_name[pred_class]}**")
+
