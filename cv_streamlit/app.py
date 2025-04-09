@@ -1,9 +1,8 @@
-
 import streamlit as st
 import torch
 from torchvision import transforms
 from PIL import Image
-from variational_autoencoder import VariationalAutoEncoder  # make sure class name matches
+from variational_autoencoder import VariationalAutoEncoder
 from classifier import Classifier
 
 # Device setup
@@ -20,9 +19,17 @@ class_name = [
     'Potato___Late_blight', 'Pepper__bell___Bacterial_spot', 'Tomato_Late_blight'
 ]
 
-# Load models
-variational_autoencoder.load_state_dict(torch.load('cv_streamlit/vae_weights.pth'))
-classifier.load_state_dict(torch.load('cv_streamlit/classifier_vae_weights.pth'))
+# Initialize models
+vae = VariationalAutoEncoder(in_channels=3).to(device)
+clf = Classifier(in_features=30).to(device)
+
+# Load weights
+vae.load_state_dict(torch.load('cv_streamlit/vae_weights.pth', map_location=device))
+clf.load_state_dict(torch.load('cv_streamlit/classifier_vae_weights.pth', map_location=device))
+
+# Set models to eval mode
+vae.eval()
+clf.eval()
 
 # Streamlit UI
 st.title("🌿 Plant Disease Classifier (VAE-based)")
@@ -46,4 +53,3 @@ if uploaded_file:
         pred_class = torch.argmax(output, dim=1).item()
 
     st.success(f"🧠 Predicted class: **{class_name[pred_class]}**")
-
