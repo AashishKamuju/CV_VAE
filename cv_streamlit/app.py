@@ -29,8 +29,8 @@ image_path = "/content/tomato_bacteria_spot.jpg"
 img = Image.open(image_path).convert("RGB")
 
 # Load weights
-variational_autoencoder.load_state_dict(torch.load('vae_weights.pth'))
-classifier.load_state_dict(torch.load('classifier_vae_weights.pth'))
+variational_autoencoder.load_state_dict(torch.load('cv_streamlit/vae_weights.pth'))
+classifier.load_state_dict(torch.load('cv_streamlit/classifier_vae_weights.pth'))
 
 # Set both to eval mode
 variational_autoencoder.eval()
